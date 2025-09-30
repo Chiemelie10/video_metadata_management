@@ -3,6 +3,9 @@ import { UUID } from "crypto";
 import { User } from "./User";
 import { Tag } from "./Tag";
 import { Genre } from "./Genre";
+import { entityTransformer } from "../utils/entityTransformer";
+
+const transformer = entityTransformer();
 
 @Entity("videos")
 export class Video {
@@ -18,10 +21,10 @@ export class Video {
     @Column({ length: 1000 })
     description: string;
 
-    @Column({ type: "timestamp" })
+    @Column({ type: "timestamp", nullable: false, transformer })
     created_at: Date;
 
-    @Column({ type: "timestamp", nullable: true })
+    @Column({ type: "timestamp", nullable: true, transformer })
     updated_at: Date;
 
     @ManyToOne(() => User, (user) => user.videos, { onDelete: "CASCADE" })

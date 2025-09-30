@@ -1,6 +1,9 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { UUID } from "crypto";
 import { Video } from "./Video";
+import { entityTransformer } from "../utils/entityTransformer";
+
+const transformer = entityTransformer();
 
 @Entity("users")
 export class User {
@@ -16,13 +19,13 @@ export class User {
     @Column({ length: 500 })
     password: string;
 
-    @Column({ type: "timestamp", nullable: true })
+    @Column({ type: "timestamp", nullable: true, transformer })
     deleted_at: Date;
 
-    @Column({ type: "timestamp" })
+    @Column({ type: "timestamp", nullable: false, transformer })
     created_at: Date;
 
-    @Column({ type: "timestamp", nullable: true })
+    @Column({ type: "timestamp", nullable: true, transformer })
     updated_at: Date;
 
     @OneToMany(() => Video, (video) => video.user)

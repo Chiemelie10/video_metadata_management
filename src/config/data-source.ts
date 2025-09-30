@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { config } from "dotenv";
 
-const appEnv: NodeJS.ProcessEnv = {};
+export const appEnv: NodeJS.ProcessEnv = {};
 config({ processEnv: appEnv });
 
 export const AppDataSource = new DataSource({

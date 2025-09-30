@@ -1,0 +1,10 @@
+import { UUID } from "crypto";
+import { Request } from "express";
+
+declare global {
+    namespace Express {
+        interface Request {
+            userId?: UUID;
+        }
+    }
+}
