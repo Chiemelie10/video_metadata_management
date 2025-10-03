@@ -93,6 +93,7 @@ export const validateVideoMetadata = async (req: Request, res: Response, next: N
 
         for (let tag of tags) {
             tag = cleanInput(tag);
+            tag = tag.toLowerCase();
 
             const exists = await AppDataSource.getRepository(Tag).exists({
                 where: { name: tag }

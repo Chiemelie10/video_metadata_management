@@ -1,7 +1,6 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs-extra";
-import { redisClient } from "./redis";
 
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {

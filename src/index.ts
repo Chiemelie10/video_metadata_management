@@ -21,7 +21,7 @@ AppDataSource.initialize().then(async () => {
     app.use("/public", express.static("src"));
     app.use("/api/auth", authRoutes);
     app.use("/api/videos", videoRoutes);
-    app.use("/api/videos", genreRoutes);
+    app.use("/api/genres", genreRoutes);
     app.use((err, req, res, next) => {
         res.status(500).json({message: err.message});
     })

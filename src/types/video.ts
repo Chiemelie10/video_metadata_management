@@ -38,3 +38,12 @@ export interface VidMetadateFieldError {
     tags?: string[];
     genres?: string[];
 }
+
+export interface VideoFilter {
+    page?: number;
+    size?: number;
+    title?: string;
+    status?: string;
+    tag?: string;
+    genreId?: string;
+}

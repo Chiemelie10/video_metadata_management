@@ -1,6 +1,6 @@
 import {Request, Response} from "express";
 import path from "path";
-import { UploadStatus, UploadVideoData, ValidatedVideoMetadata } from "../types/video";
+import { UploadStatus, UploadVideoData, ValidatedVideoMetadata, VideoFilter } from "../types/video";
 import { AppDataSource } from "../config/data-source";
 import { Video } from "../models/Video";
 import { now } from "../utils/now";
@@ -126,14 +126,10 @@ export async function createVideoMetadata(req: Request, res: Response) {
     const userId = req.userId;
     const currentTime = now();
 
-    const user = await AppDataSource.getRepository(User).findOne({
-        where: { id: userId}
-    });
-
     const video = await AppDataSource.manager
         .save(Video, {
             title,
-            user,
+            user: { id: userId },
             description,
             video: null,
             status: UploadStatus.PENDING,
@@ -143,33 +139,55 @@ export async function createVideoMetadata(req: Request, res: Response) {
             updated_at: currentTime,
         });
 
-    const videoMetadata = await AppDataSource.getRepository(Video).findOne({
-        where: { id: video.id },
-        relations: {
-            tags: true,
-            genres: true
-        }
-    });
+    const videoMetadata = await AppDataSource.getRepository(Video)
+        .createQueryBuilder("video")
+        .leftJoin("video.user", "user")
+        .leftJoinAndSelect("video.tags", "tag")
+        .leftJoinAndSelect("video.genres", "genre")
+        .select([
+            "video.id", "video.title", "video.description", "video.status",
+            "video.video", "video.created_at", "video.updated_at", "user.id",
+            "user.username", "user.email", "tag.id", "tag.name", "genre.id", "genre.name"
+        ])
+        .where("video.id = :id", { id: video.id })
+        .getOne();
+
+    const responseData = {
+        id: videoMetadata.id,
+        user: videoMetadata.user,
+        title: videoMetadata.title,
+        description: videoMetadata.description,
+        status: videoMetadata.status,
+        url: videoMetadata.video ? `${req.protocol}://${req.get("host")}${videoMetadata.video}` : videoMetadata.video,
+        tags: videoMetadata.tags,
+        genres: videoMetadata.genres,
+        created_at: videoMetadata.created_at,
+        updated_at: videoMetadata.updated_at,
+    }
 
     return res.status(201).json({
         message: "Video metadata created successfully. Use the provided id to upload your video.",
-        data: videoMetadata
+        data: responseData
     });
 }
 
 export async function updateVideoMetadata(req: Request, res: Response) {
     const { description, title, tags, genres }: ValidatedVideoMetadata = req.body;
-    const userId = req.userId;
     const { id } = req.params;
     const currentTime = now();
 
-    const video = await AppDataSource.getRepository(Video).findOne({
-        where: { id: id as UUID },
-        relations: {
-            genres: true,
-            tags: true
-        }
-    });
+    const video = await AppDataSource.getRepository(Video)
+        .createQueryBuilder("video")
+        .leftJoin("video.user", "user")
+        .leftJoinAndSelect("video.tags", "tag")
+        .leftJoinAndSelect("video.genres", "genre")
+        .select([
+            "video.id", "video.title", "video.description", "video.status",
+            "video.video", "video.created_at", "video.updated_at", "user.id",
+            "user.username", "user.email", "tag.id", "tag.name", "genre.id", "genre.name"
+        ])
+        .where("video.id = :id", { id })
+        .getOne();
 
     video.title = title;
     video.description = description;
@@ -191,12 +209,14 @@ export async function updateVideoMetadata(req: Request, res: Response) {
         title: video.title,
         description: video.description,
         status: video.status,
-        url: `${req.protocol}://${req.get("host")}${video.video}`,
+        url: video.video ? `${req.protocol}://${req.get("host")}${video.video}` : video.video,
+        tags: video.tags,
+        genres: video.genres,
         created_at: video.created_at,
-        updated_at: video.updated_at,
+        updated_at: video.updated_at
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
         message: "Video metadata updated successfully.",
         data: responseData
     });
@@ -219,8 +239,10 @@ export async function deleteVideo(req: Request, res: Response) {
         });
     }
 
-    const videoFilePath = path.join(process.cwd(), "src", video.video);
-    const result = deleteFile(videoFilePath);
+    if (video.video) {
+        const videoFilePath = path.join(process.cwd(), "src", video.video);
+        deleteFile(videoFilePath);
+    }
 
     await AppDataSource.getRepository(Video).remove(video);
 
@@ -230,15 +252,63 @@ export async function deleteVideo(req: Request, res: Response) {
 }
 
 export const getVideos = async (req: Request, res: Response) => {
-    const videos = await AppDataSource.getRepository(Video)
-        .createQueryBuilder("videos")
+    let { title, tag, genreId, status, page = 1, size = 2 }: VideoFilter = req.query;
+
+    if (page && typeof page != "number") {
+        page = parseInt(page)
+
+        if (Number.isNaN(page)) {
+            page = 1;
+        }
+    }
+
+    if (size && typeof size != "number") {
+        size = parseInt(size)
+
+        if (Number.isNaN(size)) {
+            size = 2;
+        }
+    }
+
+    page = Math.abs(page);
+    size = Math.abs(size);
+
+    const offset = (page - 1) * size;
+
+    let query = AppDataSource.getRepository(Video)
+        .createQueryBuilder("video")
+        .leftJoinAndSelect("video.user", "user")
+        .leftJoinAndSelect("video.genres", "genre")
+        .leftJoinAndSelect("video.tags", "tag")
         .select([
-            "videos.id", "videos.user_id", "videos.title",
-            "videos.description", "videos.status", "videos.video",
-            "videos.created_at", "videos.updated"
-        ])
-        .leftJoinAndSelect("video.genres", "genres")
-        .getMany();
+            "video.id", "video.title", "video.description", "video.status",
+            "video.video", "video.created_at", "video.updated_at", "user.id",
+            "user.username", "user.email", "tag.id", "tag.name", "genre.id", "genre.name"
+        ]);
+
+    if (title) {
+        query = query.andWhere("LOWER(video.title) LIKE LOWER(:title)", { title: `%${title}%` });
+    }
+
+    if (status) {
+        query = query.andWhere("LOWER(video.status) = LOWER(:status)", { status });
+    }
+
+    if (genreId) {
+        query = query.andWhere("genre.id = :genreId", { genreId });
+    }
+
+    if (tag) {
+        query = query.andWhere("LOWER(tag.name) = LOWER(:tagName)", { tagName: tag });
+    }
+
+    query = query.orderBy("video.created_at", "DESC");
+
+    query = query.skip(offset).take(size);
+
+    const [videos, total] = await query.getManyAndCount();
+
+    const totalPages = Math.ceil(total / size)
 
     const responseData = videos.map((video) => {
         return {
@@ -247,7 +317,9 @@ export const getVideos = async (req: Request, res: Response) => {
             title: video.title,
             description: video.description,
             status: video.status,
-            url: `${req.protocol}://${req.get("host")}${video.video}`,
+            url: video.video ? `${req.protocol}://${req.get("host")}${video.video}` : video.video,
+            tags: video.tags,
+            genres: video.genres,
             created_at: video.created_at,
             updated_at: video.updated_at,
         };
@@ -255,21 +327,27 @@ export const getVideos = async (req: Request, res: Response) => {
 
     return res.status(200).json({
         message: "Videos fetched successfully.",
-        data: responseData
+        currentPage: page,
+        totalPages,
+        totalNumOfVideos: total,
+        data: responseData,
     });
 }
 
 export const getVideo = async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    const video = await AppDataSource.getRepository("videos")
-        .createQueryBuilder("profiles")
+    const video = await AppDataSource.getRepository(Video)
+        .createQueryBuilder("video")
+        .leftJoin("video.user", "user")
+        .leftJoinAndSelect("video.tags", "tag")
+        .leftJoinAndSelect("video.genres", "genre")
         .select([
-            "videos.id", "videos.user_id", "videos.title",
-            "videos.description", "videos.status", "videos.video",
-            "videos.created_at", "videos.updated"
+            "video.id", "video.title", "video.description", "video.status",
+            "video.video", "video.created_at", "video.updated_at", "user.id",
+            "user.username", "user.email", "tag.id", "tag.name", "genre.id", "genre.name"
         ])
-        .where("profiles.id = :id", { id })
+        .where("video.id = :id", { id })
         .getOne();
 
     if (!video) {
@@ -284,7 +362,9 @@ export const getVideo = async (req: Request, res: Response) => {
         title: video.title,
         description: video.description,
         status: video.status,
-        url: `${req.protocol}://${req.get("host")}${video.video}`,
+        url: video.video ? `${req.protocol}://${req.get("host")}${video.video}` : video.video,
+        tags: video.tags,
+        genres: video.genres,
         created_at: video.created_at,
         updated_at: video.updated_at,
     };

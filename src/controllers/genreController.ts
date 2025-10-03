@@ -7,7 +7,7 @@ import { GenreRequestData } from "../types/genre";
 export const getGenres = async (req: Request, res: Response) => {
     const genres = await AppDataSource.getRepository(Genre)
         .createQueryBuilder("genres")
-        .select(["genre.id", "genre.name"])
+        .select(["genres.id", "genres.name"])
         .getMany();
 
     return res.status(200).json({

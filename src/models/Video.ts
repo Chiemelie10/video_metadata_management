@@ -36,10 +36,30 @@ export class Video {
     user: User;
 
     @ManyToMany(() => Tag, (tag) => tag.videos)
-    @JoinTable({ name: "video_tags" })
+    @JoinTable({
+        name: "video_tags",
+        joinColumn: {
+            name: "video_id",
+            referencedColumnName: "id"
+        },
+        inverseJoinColumn: {
+            name: "tag_id",
+            referencedColumnName: "id"
+        }
+    })
     tags: Tag[];
 
     @ManyToMany(() => Genre, (genre) => genre.videos)
-    @JoinTable({ name: "video_genres" })
+    @JoinTable({
+        name: "video_genres",
+        joinColumn: {
+            name: "video_id",
+            referencedColumnName: "id"
+        },
+        inverseJoinColumn: {
+            name: "genre_id",
+            referencedColumnName: "id"
+        }
+    })
     genres: Genre[];
 }
