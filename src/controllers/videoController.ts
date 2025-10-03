@@ -8,15 +8,13 @@ import { UUID } from "crypto";
 import { redisClient } from "../config/redis";
 import fsp from "fs/promises";
 import fs from "fs/promises";
-import { User } from "../models/User";
 import { combineChunks, deleteFile, fileExists } from "../services/videoService";
 
 export async function uploadVideo(req: Request, res: Response) {
-    const file = req.file;
     const { totalChunks, chunkIndex }: UploadVideoData  = req.body;
     const { id } = req.params;
 
-    if (chunkIndex === 0) {
+    if (chunkIndex == 0) {
         const video = await AppDataSource.manager.findOneBy(Video, { id: id as UUID });
 
         if (!video) {

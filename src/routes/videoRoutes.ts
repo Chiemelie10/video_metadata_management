@@ -11,7 +11,7 @@ const router = Router();
 router.get("", validateToken, getVideos);
 router.get("/:id", validateToken, getVideo);
 router.post("", [validateToken, validateVideoMetadata], createVideoMetadata);
-router.post("/:id/upload", [upload.single("video"), validateUploadVideoData], uploadVideo);
+router.post("/:id/upload", [validateToken, videoRoutePolicy, upload.single("video"), validateUploadVideoData], uploadVideo);
 router.patch("/:id/complete", [validateToken, videoRoutePolicy], assembleChunks);
 router.put("/:id/", [validateToken, videoRoutePolicy, validateVideoMetadata], updateVideoMetadata);
 router.delete("/:id/", [validateToken, videoRoutePolicy], deleteVideo);

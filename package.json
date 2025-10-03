@@ -4,7 +4,8 @@
   "description": "Project developed to manage video metadata.",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "node build/index.js",
+    "build": "tsc",
     "typeorm": "typeorm-ts-node-commonjs",
     "dev": "nodemon"
   },
