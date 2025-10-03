@@ -14,10 +14,10 @@ export class Tag {
     name: string;
 
     @Column({ type: "timestamp", nullable: false, transformer })
-    created_at: Date;
+    created_at: string;
 
     @Column({ type: "timestamp", nullable: true, transformer })
-    updated_at: Date;
+    updated_at: string;
 
     @ManyToMany(() => Video, (video) => video.tags)
     videos: Video[];

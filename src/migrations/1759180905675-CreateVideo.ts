@@ -31,7 +31,20 @@ export class CreateVideo1759180905675 implements MigrationInterface {
                         name: "description",
                         type: "varchar",
                         length: "1000",
+                        isNullable: false
+                    },
+                    {
+                        name: "video",
+                        type: "varchar",
+                        length: "255",
                         isNullable: true
+                    },
+                    {
+                        name: "status",
+                        type: "enum",
+                        enumName: "status_enum",
+                        enum: ["pending", "uploading", "complete"],
+                        isNullable: false
                     },
                     {
                         name: "created_at",

@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 import { UUID } from "crypto";
 import { Video } from "./Video";
 import { entityTransformer } from "../utils/entityTransformer";
@@ -14,10 +14,10 @@ export class Genre {
     name: string;
 
     @Column({ type: "timestamp", nullable: false, transformer })
-    created_at: Date;
+    created_at: string;
 
     @Column({ type: "timestamp", nullable: true, transformer })
-    updated_at: Date;
+    updated_at: string;
 
     @ManyToMany(() => Video, (video) => video.tags)
     videos: Video[];
