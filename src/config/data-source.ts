@@ -15,7 +15,7 @@ export const AppDataSource = new DataSource({
     synchronize: false,
     migrationsRun: false,
     logging: false,
-    entities: ["src/models/**/*.ts"],
-    migrations: ["src/migrations/**/*.ts"],
-    subscribers: ["src/subscriber/**/*.ts"]
+    entities: appEnv.NODE_ENV === "production" ? ["build/models/**/*.js"] : ["src/models/**/*.ts"],
+    migrations: appEnv.NODE_ENV === "production" ? ["build/migrations/**/*.js"] : ["src/migrations/**/*.ts"],
+    subscribers: appEnv.NODE_ENV === "production" ? ["build/subscriber/**/*.js"] : ["src/subscriber/**/*.ts"]
 })
