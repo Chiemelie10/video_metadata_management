@@ -1,10 +1,11 @@
 import { AppDataSource } from "./config/data-source";
-import express, { NextFunction } from "express";
+import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes";
 import videoRoutes from "./routes/videoRoutes";
 import genreRoutes from "./routes/genreRoutes";
 import cors from "cors";
+import { errorHandler } from "./middlewares/error/errorHandler";
 
 AppDataSource.initialize().then(async () => {
 
@@ -22,9 +23,7 @@ AppDataSource.initialize().then(async () => {
     app.use("/api/auth", authRoutes);
     app.use("/api/videos", videoRoutes);
     app.use("/api/genres", genreRoutes);
-    app.use((err, req, res, next) => {
-        res.status(500).json({message: err.message});
-    })
+    app.use(errorHandler);
 
     app.listen(port, () => {
         console.log(`Video metadata management app listening on port ${port}`)
